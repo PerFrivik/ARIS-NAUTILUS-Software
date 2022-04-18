@@ -1,0 +1,45 @@
+This is a file dedicated to help understand the ArduSub open-source code. 
+
+PID: 
+
+    File: Control_auto.cpp 
+        line: 37-70 
+            code: 
+            %%%%
+                // auto_run - runs the appropriate auto controller
+                // according to the current auto_mode
+                // should be called at 100hz or more
+                void Sub::auto_run()
+                {
+                    mission.update();
+
+                    // call the correct auto controller
+                    switch (auto_mode) {
+
+                    case Auto_WP:
+                    case Auto_CircleMoveToEdge:
+                        auto_wp_run();
+                        break;
+
+                    case Auto_Circle:
+                        auto_circle_run();
+                        break;
+
+                    case Auto_NavGuided:
+                #if NAV_GUIDED == ENABLED
+                        auto_nav_guided_run();
+                #endif
+                        break;
+
+                    case Auto_Loiter:
+                        auto_loiter_run();
+                        break;
+
+                    case Auto_TerrainRecover:
+                        auto_terrain_recover_run();
+                        break;
+                    }
+                }
+            %%%%
+
+                Information: It seems like ArduSub has different PID controllers depending on the mode, as auto_run calls the appropriate auto controller. This tells us that we don't have to alter every controller, but rather just the one we need. 
