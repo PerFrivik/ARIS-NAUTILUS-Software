@@ -40,3 +40,15 @@ def Compass_data(master):
 
     msg_Compass = master.recv_match(type='MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE', blocking = True)
     return msg_Compass_filter 
+
+####################################################
+# Getting waypoint error                           #
+####################################################
+
+def error():
+    #Function to not only calculate the error of the waypoints, but also to see 
+    #if the error is tolerated (set tolerance for errors e.g. +- 10m Radius tolerance)
+    #we do this by subtracting the wanted coordinates so latitude_waypoint - latitude_actual, then the same for longitude
+    #write function to compensate for this error, idea is to use the accelerometer to measure how hard it got accelerated
+    #then measure the time, and we should then be able to calculate the offset. 
+    #use equation of motion to determine the correction that needs to be made 
