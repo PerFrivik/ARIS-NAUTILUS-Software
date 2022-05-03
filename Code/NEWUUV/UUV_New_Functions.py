@@ -1,18 +1,21 @@
+import pymavlink
 from pymavlink import mavutil
 
 ####################################################
 # Establishing a connection to the UUV             #
 ####################################################
 
-# Start a connection listening to a UDP port
-master = mavutil.mavlink_connection('udpin:localhost:14540')
+def master_connection():
+    # Start a connection listening to a UDP port
+    master = mavutil.mavlink_connection('udpin:localhost:14540')
 
-# Wait for the first heartbeat 
-#   This sets the system and component ID of remote system for the link
-master.wait_heartbeat()
-print("Heartbeat from system (system %u component %u)" % (the_connection.target_system, the_connection.target_component))
+    # Wait for the first heartbeat 
+    #   This sets the system and component ID of remote system for the link
+    master.wait_heartbeat()
+    print("Heartbeat from system (system %u component %u)" % (the_connection.target_system, the_connection.target_component))
 
-# Once connected, use 'master' to get and send messages
+    # Once connected, use 'master' to get and send messages
+    return master
 
 ####################################################
 # Getting Pressure data                            #

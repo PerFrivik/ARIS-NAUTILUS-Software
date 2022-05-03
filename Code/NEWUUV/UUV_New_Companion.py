@@ -1,5 +1,4 @@
-import UUV_New_Functions
-
+from UUV_New_Functions import master_connection, Pressure_data, GPS_data, Compass_data, error
 #expected_functions: 
 #   get_latitude()      returns latitude from gps sensor, negative when south
 #   get_longitude()     returns longitude from gps sensor, negative when west
