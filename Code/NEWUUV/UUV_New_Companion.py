@@ -50,8 +50,9 @@ def pressure_to_depth_freshwater(pressure):
 maxGPS_aqquisition_depth = 0.5
 #average movementspeed of UUV in meters per second
 average_movementspeed = 0.17
-#radius of the waypoints the UUV has to pass through
+#radius of the waypoints the UUV has to pass through in meters
 waypoint_radius = 5
+
 
 def main():
     #Declares that the mission is currently running
@@ -74,7 +75,7 @@ def main():
         #updating depth and attitude
         depth = pressure_to_depth_freshwater(get_pressure)
         attitude.update_attitude(get_heading(), get_pitch(), get_yaw(), get_roll())
-        #Updating est_pos at beginning of loop by GPS if high enough els use approximation
+        #Updating est_pos at beginning of loop by GPS if high enough else use approximation
         if(depth < maxGPS_aqquisition_depth):
             est_pos.update_position(get_latitude(), get_longitude)
         else:
