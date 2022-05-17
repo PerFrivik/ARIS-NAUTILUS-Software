@@ -1,7 +1,8 @@
 import math
 from email.errors import MissingHeaderBodySeparatorDefect
 from UUV_New_Functions import master_connection, Pressure_data, GPS_data, Compass_data
-#expected_functions: 
+#expected_functions:
+# SensorDataFunctions: 
 #   get_latitude()      returns latitude from gps sensor, negative when south
 #   get_longitude()     returns longitude from gps sensor, negative when west
 #   get_pressure()      returns pressure from barometer in bar (or pascal?)
@@ -10,12 +11,13 @@ from UUV_New_Functions import master_connection, Pressure_data, GPS_data, Compas
 #   get_yaw()           returns yaw value from PID controller
 #   get_roll()          returns roll value from PID controller
 #   get_leaksensors()   returns false if no leak is detected, true if leaky
+#
+#MotorControlFunctions:
+#   
 
-
-#class for storing coordinates, 3 properties: north, east and depth
+#class for storing coordinates, 2 properties: latitude and longitude
 #latitude denotes the northern GPS coordinate, negative when south
 #longitude denotes the eastern GPS coordinate, negative when west
-#depth denotes the depth under surface level in meters
 class GPS_coordinate:
     def __init__(self, latitude, longitude):
         self.latitude = latitude
@@ -46,15 +48,17 @@ def pressure_to_depth_freshwater(pressure):
     depth = pressure / 0.0978
     return depth
 
-#maximum depth where we still can get GPS signal (needs to be determined by testing) in meters
-maxGPS_aqquisition_depth = 0.5
-#average movementspeed of UUV in meters per second
-average_movementspeed = 0.17
-#radius of the waypoints the UUV has to pass through in meters
-waypoint_radius = 5
-
-
 def main():
+    #maximum depth where we still can get GPS signal (needs to be determined by testing) in meters
+    maxGPS_aqquisition_depth = 0.5
+    #average movementspeed of UUV in meters per second
+    average_horizontalspeed = 0.17
+    #radius of the waypoints the UUV has to pass through in meters
+    waypoint_radius = 5
+    #counts the number of waypoints vehicle has passed through
+    waypointcounter = 0
+    #list of GPS_coordinates the UUV is supposed to follow
+    waypoints = []
     #Declares that the mission is currently running
     mission_running = True
     #estimated position that the uuv thinks it's at, gets updated when moving
@@ -63,8 +67,6 @@ def main():
     attitude = vehicle_attitude(get_heading(), get_pitch(), get_yaw(), get_roll())
     #depth of vehicle in meters
     depth = pressure_to_depth_freshwater(get_pressure)
-    #list of GPS_coordinates the UUV is supposed to follow
-    waypoints = []
 
     while(mission_running):
         #test for leaks in vehicle
@@ -81,8 +83,11 @@ def main():
         else:
             component_longitude = math.cos(attitude.heading)
             component_latitude = math.sin(attitude.heading)
-            est_pos.update_position(est_pos.latitude + component_latitude * average_movementspeed,
-                                     est_pos.longitude + component_longitude * average_movementspeed)
+            est_pos.update_position(est_pos.latitude + component_latitude * average_horizontalspeed,
+                                     est_pos.longitude + component_longitude * average_horizontalspeed)
+
+        #Controlling motors to navigate through waypoints
+                                     
 
 
 
