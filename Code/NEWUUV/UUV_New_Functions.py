@@ -1,45 +1,99 @@
 import pymavlink
 from pymavlink import mavutil
 
-####################################################
-# Establishing a connection to the UUV             #
-####################################################
+#  get_master()         returns the master connection     
 
-def master_connection():
-    # Start a connection listening to a UDP port
-    master = mavutil.mavlink_connection('udpin:localhost:14540')
+def get_master():
+     master = mavutil.mavlink_connection("/dev/cu.usbmodem1201", baud=115200)
+     return master
 
-    # Wait for the first heartbeat 
-    #   This sets the system and component ID of remote system for the link
-    master.wait_heartbeat()
-    print("Heartbeat from system (system %u component %u)" % (the_connection.target_system, the_connection.target_component))
+#  get_heartbeat()      returns the heartbeat that confirms the connection
 
-    # Once connected, use 'master' to get and send messages
-    return master
+def get_heartbeat():
+    master = get_master()
+    # Wait for a heartbeat before sending commands
+    return master.wait_heartbeat()
 
-####################################################
-# Getting Pressure data                            #
-####################################################
+#   get_message_interval()
 
-def Pressure_data(master):
+def get_message_interval(message_id: int, frequency_hz: float):
+    master.mav.command_long_send(
+        master.target_system, master.target_component,
+        mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
+        message_id, # The MAVLink message ID
+        1e6 / frequency_hz, # The interval between two messages in microseconds. Set to -1 to disable and 0 to request default rate.
+        0, 0, 0, 0, # Unused parameters
+        0, # Target address of message stream (if message has target address fields). 0: Flight-stack default (recommended), 1: address of requestor, 2: broadcast.
+    )
+    
+#   get_latitude()      returns latitude from gps sensor, negative when south
 
-    msg_pressure = master.recv_match(type='MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE', blocking = True)
-    return msg_Pressure_filter
+def get_latitude():
+    # Configure ATTITUDE message to be sent at 2Hz
+    get_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_AHRS2, 1)
 
-####################################################
-# Getting GPS data                                 #
-####################################################
+    AHRS2 = master.recv_match(type = 'AHRS2', blocking=True)
 
-def GPS_data(master):
+    latitude = AHRS2.get("lat")
+    
+    return latitude
 
-    msg_GPS = master.recv_match(type='MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE', blocking = True)
-    return msg_GPS_filter
+#   get_longitude()     returns longitude from gps sensor, negative when west
 
-####################################################
-# Getting Compass data                            #
-####################################################
+def get_longitude():
+    # Configure ATTITUDE message to be sent at 2Hz
+    get_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_AHRS2, 1)
 
-def Compass_data(master):
+    AHRS2 = master.recv_match(type = 'AHRS2', blocking=True)
 
-    msg_Compass = master.recv_match(type='MAV_SYS_STATUS_SENSOR_ABSOLUTE_PRESSURE', blocking = True)
-    return msg_Compass_filter  
+    longitude = AHRS2.get("lng")
+    
+    return longitude 
+
+#   get_pressure()      returns pressure from barometer in bar (or pascal?)
+
+#   get_heading()       returns angle relative to North from compass in radians
+
+def get_heading():
+    # Configure ATTITUDE message to be sent at 2Hz
+    get_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_COMPASSMOT_STATUS, 1)   
+    COMPASSMOT_STATUS = master.recv_match(type = 'COMPASSMOT_STATUS', blocking=True)
+
+    heading = COMPASSMOT_STATUS.get("pitch")
+    
+    return heading
+
+#   get_pitch()         returns pitch value from PID controller
+
+def get_pitch():
+    # Configure ATTITUDE message to be sent at 2Hz
+    get_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_AHRS2, 1)   
+    AHRS2 = master.recv_match(type = 'AHRS2', blocking=True)
+
+    pitch = AHRS2.get("pitch")
+    
+    return pitch
+
+#   get_yaw()           returns yaw value from PID controller
+
+def get_yaw():
+    # Configure ATTITUDE message to be sent at 2Hz
+    get_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_AHRS2, 1)
+    AHRS2 = master.recv_match(type = 'AHRS2', blocking=True)
+
+    yaw = AHRS2.get("yaw")
+    
+    return yaw
+
+#   get_roll()          returns roll value from PID controller (Rick Roll)
+
+def get_roll():
+    # Configure ATTITUDE message to be sent at 2Hz
+    get_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_AHRS2, 1)
+    AHRS2 = master.recv_match(type = 'AHRS2', blocking=True)
+
+    roll = AHRS2.get("roll")
+    
+    return roll
+
+#   get_leaksensors()   returns false if no leak is detected, true if leaky
