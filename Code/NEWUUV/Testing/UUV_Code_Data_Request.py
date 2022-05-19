@@ -15,15 +15,6 @@ master = mavutil.mavlink_connection("/dev/cu.usbmodem1201", baud=115200)
 master.wait_heartbeat()
 
 def request_message_interval(message_id: int, frequency_hz: float):
-    """
-    Request MAVLink message in a desired frequency,
-    documentation for SET_MESSAGE_INTERVAL:
-        https://mavlink.io/en/messages/common.html#MAV_CMD_SET_MESSAGE_INTERVAL
-
-    Args:
-        message_id (int): MAVLink message ID
-        frequency_hz (float): Desired frequency in Hz
-    """
     master.mav.command_long_send(
         master.target_system, master.target_component,
         mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
