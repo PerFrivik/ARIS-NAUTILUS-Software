@@ -17,6 +17,7 @@ def get_heartbeat():
 #   get_message_interval()
 
 def get_message_interval(message_id: int, frequency_hz: float):
+    master = get_master()
     master.mav.command_long_send(
         master.target_system, master.target_component,
         mavutil.mavlink.MAV_CMD_SET_MESSAGE_INTERVAL, 0,
@@ -29,6 +30,7 @@ def get_message_interval(message_id: int, frequency_hz: float):
 #   get_latitude()      returns latitude from gps sensor, negative when south
 
 def get_latitude():
+    master = get_master()
     # Configure ATTITUDE message to be sent at 2Hz
     get_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_AHRS2, 1)
 
@@ -41,6 +43,7 @@ def get_latitude():
 #   get_longitude()     returns longitude from gps sensor, negative when west
 
 def get_longitude():
+    master = get_master()
     # Configure ATTITUDE message to be sent at 2Hz
     get_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_AHRS2, 1)
 
@@ -55,6 +58,7 @@ def get_longitude():
 #   get_heading()       returns angle relative to North from compass in radians
 
 def get_heading():
+    master = get_master()
     # Configure ATTITUDE message to be sent at 2Hz
     get_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_COMPASSMOT_STATUS, 1)   
     COMPASSMOT_STATUS = master.recv_match(type = 'COMPASSMOT_STATUS', blocking=True)
@@ -63,9 +67,12 @@ def get_heading():
     
     return heading
 
+    #CHANGE THIS USE #74 VFR_HUD!!!!!!! 
+
 #   get_pitch()         returns pitch value from PID controller
 
 def get_pitch():
+    master = get_master()
     # Configure ATTITUDE message to be sent at 2Hz
     get_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_AHRS2, 1)   
     AHRS2 = master.recv_match(type = 'AHRS2', blocking=True)
@@ -77,6 +84,7 @@ def get_pitch():
 #   get_yaw()           returns yaw value from PID controller
 
 def get_yaw():
+    master = get_master()
     # Configure ATTITUDE message to be sent at 2Hz
     get_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_AHRS2, 1)
     AHRS2 = master.recv_match(type = 'AHRS2', blocking=True)
@@ -88,6 +96,7 @@ def get_yaw():
 #   get_roll()          returns roll value from PID controller (Rick Roll)
 
 def get_roll():
+    master = get_master()
     # Configure ATTITUDE message to be sent at 2Hz
     get_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_AHRS2, 1)
     AHRS2 = master.recv_match(type = 'AHRS2', blocking=True)
