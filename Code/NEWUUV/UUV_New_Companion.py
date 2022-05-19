@@ -1,7 +1,7 @@
 import math
 import time
 from email.errors import MissingHeaderBodySeparatorDefect
-from UUV_New_Functions import master_connection, Pressure_data, GPS_data, Compass_data
+from UUV_New_Functions import master_connection, Pressure_data, GPS_data, Compass_data, get_latitude, get_longitude
 #expected_functions:
 # SensorDataFunctions: 
 #   get_latitude()      returns latitude from gps sensor in decimal degrees
@@ -77,12 +77,14 @@ def check_waypoint(est_pos):
     #distance is the distance of the UUV to the current waypoint in decimal GPS_coordinates
     distance = math.sqrt(((waypoints[waypoint_counter].latitude - est_pos.latitude) ** 2)
                 + ((waypoints[waypoint_counter].longitude - est_pos.longitude) ** 2))            
-    distance_in_meters = distance * 111319.9            
+    distance_in_meters = distance * GPSdecimal_to_meters            
     if(distance_in_meters < waypoint_radius):
         return True
     else:
         return False
 
+#Constant that denotes the value used to convert decimal GPS represantation to meters
+GPSdecimal_to_meters = 111319.9
 #Time it takes for the buoyancy module to fully pump out all the water in seconds    
 buoyancy_fullstroke_time = 18
 #maximum depth where we still can get GPS signal (needs to be determined by testing) in meters
@@ -122,8 +124,8 @@ def main():
         else:
             component_longitude = math.cos(attitude.heading)
             component_latitude = math.sin(attitude.heading)
-            est_pos.update_position(est_pos.latitude + component_latitude * average_horizontalspeed,
-                                     est_pos.longitude + component_longitude * average_horizontalspeed)
+            est_pos.update_position(est_pos.latitude + component_latitude * average_horizontalspeed / GPSdecimal_to_meters,
+                                     est_pos.longitude + component_longitude * average_horizontalspeed / GPSdecimal_to_meters)
 
         #Check if UUV is currently at waypoint
         if(check_waypoint(est_pos)):
