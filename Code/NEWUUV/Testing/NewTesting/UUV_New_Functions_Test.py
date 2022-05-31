@@ -61,6 +61,8 @@ def get_longitude():
 
 #   get_pressure()      returns pressure from barometer in bar (or pascal?)
 
+# STILL MISSING NEED TO TALK WITH ELECTRONICS 
+
 #   get_heading()       returns angle relative to North from compass in radians
 
 def get_heading():
@@ -76,7 +78,7 @@ def get_heading():
     
     return heading
 
-    #CHANGE THIS USE #74 VFR_HUD!!!!!!! 
+    #CHANGE THIS USE #74 VFR_HUD!!!!!!! DONEEE BUT I DONT KNOW IF HE WANTS DEGREES OR WHAT HE WANTS FOR UNITS
 
 #   get_pitch()         returns pitch value from PID controller
 
@@ -124,3 +126,6 @@ def get_roll():
     return roll
 
 #   get_leaksensors()   returns false if no leak is detected, true if leaky
+
+
+# MISSINGGGG
