@@ -1,7 +1,7 @@
 import math
 import time
 from email.errors import MissingHeaderBodySeparatorDefect
-from UUV_New_Functions import master_connection, Pressure_data, GPS_data, Compass_data, get_latitude, get_longitude
+from Testing.OldTesting.UUV_New_Functions_old import master_connection, Pressure_data, GPS_data, Compass_data, get_latitude, get_longitude
 #expected_functions:
 # SensorDataFunctions: 
 #   get_latitude()      returns latitude from gps sensor in decimal degrees
