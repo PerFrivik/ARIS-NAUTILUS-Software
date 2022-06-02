@@ -1,7 +1,9 @@
 import math
 import time
 from email.errors import MissingHeaderBodySeparatorDefect
-from Testing.OldTesting.UUV_New_Functions_old import master_connection, Pressure_data, GPS_data, Compass_data, get_latitude, get_longitude
+
+from torch import not_equal
+from UUV_New_Functions import *
 #expected_functions:
 # SensorDataFunctions: 
 #   get_latitude()      returns latitude from gps sensor in decimal degrees
@@ -14,8 +16,9 @@ from Testing.OldTesting.UUV_New_Functions_old import master_connection, Pressure
 #   get_leaksensors()   returns false if no leak is detected, true if leaky
 #
 #MotorControlFunctions:
-#   buoyancy_up()       controls the motor of the buoyancy module to pump water out
-#   buoyancy_down()     controls the motor of the buoyancy module to pump water in
+#   set_buoyancy(value) Sends value to Pico motor control board
+#   set_pitch(value)    Sends value to Jorit, possibly include encoding for pitch
+#   set_roll(value)     Sends value to Jorit, possibly include encoding for roll
 #   emergency_co2()     controls the container of co2 to release the gas
 
 #class for storing coordinates, 2 properties: latitude and longitude
@@ -54,8 +57,7 @@ class vehicle_attitude:
 def emergency_procedure():
     starttime = time.time()
     emergency_co2()
-    while(time.time() - starttime < buoyancy_fullstroke_time):
-        buoyancy_up()
+    set_buoyancy(100)
     while(pressure_to_depth_freshwater(get_pressure()) > 0.1):
         time.sleep(1)    
 
@@ -87,6 +89,12 @@ def check_waypoint(est_pos):
 GPSdecimal_to_meters = 111319.9
 #Time it takes for the buoyancy module to fully pump out all the water in seconds    
 buoyancy_fullstroke_time = 18
+#max depth of the vehicle, if it goes deeper, it cant return (added some safety meters)
+max_depth = 50
+#optimal pitch when the UUV is descending
+descending_pitch = -72
+#optimal pitch when the UUV is ascending
+ascending_pitch = 72
 #maximum depth where we still can get GPS signal (needs to be determined by testing) in meters
 maxGPS_aqquisition_depth = 0.1
 #average movementspeed of UUV in meters per second
@@ -108,6 +116,14 @@ def main():
     attitude = vehicle_attitude(get_heading(), get_pitch(), get_yaw(), get_roll())
     #depth of vehicle in meters
     depth = pressure_to_depth_freshwater(get_pressure())
+    #expected position of roll motor ranging from -90(left) to 90(right), neutral = 0
+    motor_roll = 0
+    #expected position of pitch motor ranging from -90(bottom) to 90(top), neutral = 0
+    motor_pitch = 0
+    #expected position of buoyancy motor ranging from 0(filled with water) to 100(empty), neutral=50
+    motor_buoyancy = 50
+    #boolean value that indicates if vehicle is descending or ascending
+    descending = True
 
     while(mission_running):
         #test for leaks in vehicle
@@ -124,22 +140,35 @@ def main():
         else:
             component_longitude = math.cos(attitude.heading)
             component_latitude = math.sin(attitude.heading)
-            est_pos.update_position(est_pos.latitude + component_latitude * average_horizontalspeed / GPSdecimal_to_meters,
-                                     est_pos.longitude + component_longitude * average_horizontalspeed / GPSdecimal_to_meters)
+            est_pos.update_position(est_pos.latitude + (component_latitude * average_horizontalspeed / GPSdecimal_to_meters),
+                                     est_pos.longitude + (component_longitude * average_horizontalspeed / GPSdecimal_to_meters))
 
         #Check if UUV is currently at waypoint
         if(check_waypoint(est_pos)):
             waypoint_counter = waypoint_counter + 1
             if(waypoint_counter >= len(waypoints)):
-                starttime = time.time()
-                while(time.time() - starttime < buoyancy_fullstroke_time):
-                    buoyancy_up()
+                set_buoyancy(100)
                 while(pressure_to_depth_freshwater(get_pressure()) > 0.1):
                     time.sleep(1)
                 mission_running = False    
                 break 
-
-
+        #send comands to motors   
+        if(depth >= max_depth):
+            descending = False
+        if(descending and motor_pitch != descending_pitch):
+            set_pitch(descending_pitch)
+            motor_pitch = descending_pitch
+        if(not descending and motor_pitch != ascending_pitch):
+            set_pitch(ascending_pitch)
+            motor_pitch = ascending_pitch
+        if(descending and motor_buoyancy != 0):
+            set_buoyancy(0)
+            motor_buoyancy = 0            
+        if(not descending and motor_pitch != 100):
+            set_buoyancy(100)
+            motor_buoyancy = 100
+        #add roll logic
+        # add descend/ascend switch logic    
 
 
 
