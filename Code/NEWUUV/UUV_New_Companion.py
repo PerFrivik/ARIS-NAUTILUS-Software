@@ -195,8 +195,6 @@ def main():
                 mission_running = False    
                 break 
         #send commands to motors   
-        if(depth >= max_depth):
-            descending = False
         if(descending and expected_pitch != descending_pitch):
             set_pitch(descending_pitch)
             expected_pitch = descending_pitch
@@ -207,13 +205,20 @@ def main():
             buoyancy_down()           
         if(not descending and motor_buoyancy != 100):
             buoyancy_up()
-            
+
         #add roll logic
 
         #add descend/ascend switch logic
-        if((descending and depth >= lower_depth) or (not descending and depth <= upper_depth)):
+        if((descending and depth >= lower_depth) or (not descending and depth <= upper_depth) or (depth >= max_depth)):
             transitioning = True
+            if(descending):
+                buoyancy_up()
+                starttime = time.time()
+            else:
+                buoyancy_down()
+                starttime = time.time()
         while(transitioning):
+            
             check_leaksensors()
 
         #test for leaks in vehicle    
