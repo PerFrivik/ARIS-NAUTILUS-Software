@@ -1,8 +1,5 @@
 import math
 import time
-from email.errors import MissingHeaderBodySeparatorDefect
-
-from torch import not_equal
 from UUV_New_Functions import *
 #expected_functions:
 # SensorDataFunctions: 
@@ -61,29 +58,27 @@ class waypoint:
     def __init__(self, latitude, longitude, lower_depth, upper_depth):
         self.latitude = latitude
         self.longitude = longitude
-        if(self.lower_depth > 0):
-            self.lower_depth = lower_depth
+        if(lower_depth > 0):
+            if(lower_depth > max_depth):
+                self.lower_depth = max_depth
+            else:    
+                self.lower_depth = lower_depth
         else:
             self.lower_depth = 0
-        if(self.upper_depth > 0):        
-            self.upper_depth = upper_depth
+        if(upper_depth > 0):
+            if(upper_depth > max_depth):
+                upper_depth = max_depth
+            else:            
+                self.upper_depth = upper_depth
         else:
-            self.upper_depth = 0   
+            self.upper_depth = 0      
 
 #FUNCTIONS
-
-#function for checking the leaksensors on the UUV, and run emergency_procedure if neccessary
-def check_leaksensors():
-    if(get_leaksensors()):
-        emergency_procedure()
-        global mission_running
-        mission_running = False
 
 #function that is called when a leak is detected in the uuv
 #Deploys co2 gas cannister and pumps water out of buoyancy module
 #waits until reaching the surface and then ends mission
 def emergency_procedure():
-    starttime = time.time()
     emergency_co2()
     buoyancy_up()
     while(pressure_to_depth_freshwater(get_pressure()) > 0.1):
@@ -182,6 +177,11 @@ def main():
             est_pos.update_position(est_pos.latitude + (component_latitude * average_horizontalspeed / GPSdecimal_to_meters),
                                      est_pos.longitude + (component_longitude * average_horizontalspeed / GPSdecimal_to_meters))
 
+        #test for leaks in vehicle    
+        if(get_leaksensors()):
+            emergency_procedure()
+            break
+
         #Check if UUV is currently at waypoint
         if(check_waypoint(est_pos)):
             upper_depth = waypoints[waypoint_counter].upper_depth
@@ -193,36 +193,68 @@ def main():
                 while(pressure_to_depth_freshwater(get_pressure()) > 0.1):
                     time.sleep(1)
                 mission_running = False    
-                break 
-        #send commands to motors   
-        if(descending and expected_pitch != descending_pitch):
-            set_pitch(descending_pitch)
-            expected_pitch = descending_pitch
-        if(not descending and expected_pitch != ascending_pitch):
-            set_pitch(ascending_pitch)
-            expected_pitch = ascending_pitch
-        if(descending and motor_buoyancy != 0):
-            buoyancy_down()           
-        if(not descending and motor_buoyancy != 100):
-            buoyancy_up()
+                break
+        
+        #Check if vehicle should start switch between ascend/descend
+        if((descending and depth >= lower_depth) or (not descending and depth <= upper_depth)):
+            if(not transitioning):
+                transitioning = True
+                changed = False
+                if(descending):
+                    buoyancy_up()
+                else:
+                    buoyancy_down()
+                starttime = time.time()
+                if(descending and depth >= lower_depth):
+                    trans_up = True
+                else:
+                    trans_up = False    
 
-        #add roll logic
-
-        #add descend/ascend switch logic
-        if((descending and depth >= lower_depth) or (not descending and depth <= upper_depth) or (depth >= max_depth)):
-            transitioning = True
-            if(descending):
+        if(trans_up and depth <= upper_depth and transitioning):
+            buoyancy_down()
+            trans_up = False
+            changed = True
+        elif(not trans_up and depth >= lower_depth and transitioning):
+            buoyancy_up()          
+            trans_up = True
+            changed = True  
+                    
+        if(not transitioning):             
+            #send commands to motors   
+            if(descending and expected_pitch != descending_pitch):
+                set_pitch(descending_pitch)
+                expected_pitch = descending_pitch
+            if(not descending and expected_pitch != ascending_pitch):
+                set_pitch(ascending_pitch)
+                expected_pitch = ascending_pitch
+            if(descending and motor_buoyancy != 0):
+                buoyancy_down()           
+            if(not descending and motor_buoyancy != 100):
                 buoyancy_up()
-                starttime = time.time()
+        #keep pitch of UUV right when switching
+        else:
+            pitchrange = ascending_pitch - descending_pitch
+            nowtime = time.time()
+            if(not changed):
+                dif = nowtime - starttime
+                percent_completed = dif / buoyancy_fullstroke_time
+                if(trans_up):
+                    set_pitch(descending_pitch + pitchrange * percent_completed)
+                else:
+                    set_pitch(ascending_pitch - pitchrange * percent_completed)
+                if(percent_completed >= 1):
+                    transitioning = False
+                    if(trans_up):
+                        descending = False
+                    else:
+                        descending = True    
             else:
-                buoyancy_down()
-                starttime = time.time()
-        while(transitioning):
-            
-            check_leaksensors()
+                changed = False
+                percent_completed = 1 - percent_completed
+                starttime = nowtime - percent_completed * buoyancy_fullstroke_time    
 
-        #test for leaks in vehicle    
-        check_leaksensors()
+        #roll logic
+                    
 
 
 
