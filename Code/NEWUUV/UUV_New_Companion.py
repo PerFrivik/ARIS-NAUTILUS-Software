@@ -104,6 +104,16 @@ def buoyancy_down():
     global motor_buoyancy
     motor_buoyancy = 0
 
+#function for setting the roll value, such that UUV turns left
+def roll_left():
+    global maxroll_angle
+    set_roll(-maxroll_angle)
+
+#function for setting the roll value, such that UUV turns right
+def roll_right():
+    global maxroll_angle
+    set_roll(maxroll_angle) 
+
 #Function to check if UUV is in radius of waypoint, returns Boolean value
 #4 Input paramters: waypointradius, waypointcounter, waypoints, est_pos
 #waypointradius denotes the radius around a waypoint that the UUv has to pass through
@@ -138,6 +148,8 @@ motor_buoyancy = 50
 maxGPS_aqquisition_depth = 0.1
 #average movementspeed of UUV in meters per second
 average_horizontalspeed = 0.17
+#maximum roll angle the vehicle should reach in degrees
+maxroll_angle = 45
 #radius of the waypoints that the UUV has to pass through in meters
 waypoint_radius = 5
 #counts the number of waypoints vehicle has passed through
@@ -159,6 +171,8 @@ def main():
     depth = pressure_to_depth_freshwater(get_pressure())
     #expected position of roll of the UUV the motor is trying to achieve ranging from -90(left) to 90(right), neutral = 0
     expected_roll = 0
+    #if the angle between heading vector and waypoint vector is >= roll_reaction_angle UUV should roll [RADIANS]
+    roll_reaction_angle = 0.0872665
     #expected position of pitch of the UUV the motor is trying to achieve ranging from -90(bottom) to 90(top), neutral = 0
     expected_pitch = 0
     #boolean value that indicates if vehicle is descending or ascending
@@ -173,6 +187,7 @@ def main():
     #initializin buoyancy and pitch
     set_pitch(0)
     set_buoyancy(50)
+    set_roll(0)
     time.sleep(10)
     #time value that indicates the start of a transition
     starttime = time.time()
@@ -187,8 +202,8 @@ def main():
         if(depth < maxGPS_aqquisition_depth):
             est_pos.update_position(get_latitude(), get_longitude())
         else:
-            component_longitude = math.cos(attitude.heading)
             component_latitude = math.sin(attitude.heading)
+            component_longitude = math.cos(attitude.heading)
             est_pos.update_position(est_pos.latitude + (component_latitude * average_horizontalspeed / GPSdecimal_to_meters),
                                      est_pos.longitude + (component_longitude * average_horizontalspeed / GPSdecimal_to_meters))
 
@@ -290,8 +305,24 @@ def main():
                 starttime = nowtime - percent_completed * buoyancy_fullstroke_time
        
         #roll logic
-                    
+        comp_latitude = math.sin(attitude.heading)
+        comp_longitude = math.cos(attitude.heading)
+        vw = (waypoints[waypoint_counter].latitude - est_pos.latitude, waypoints[waypoint_counter].longitude - est_pos.longitude)
+        vh =  (comp_latitude, comp_longitude)
 
+        signed_angle = math.atan2(vw[1],vw[0]) - math.atan2(vh[1],vh[0])
+        if(abs(signed_angle) > math.pi):
+            if(signed_angle > 0):
+                signed_angle = signed_angle - (2 * math.pi)
+            else:
+                signed_angle = signed_angle + ( 2 * math.pi)              
+
+        if(signed_angle > roll_reaction_angle):
+            roll_right()
+        elif(signed_angle < roll_reaction_angle):
+            roll_right()
+        else:
+            set_roll(0)        
 
 
 
