@@ -310,7 +310,7 @@ def main():
             if(signed_angle > 0):
                 signed_angle = signed_angle - (2 * math.pi)
             else:
-                signed_angle = signed_angle + ( 2 * math.pi)              
+                signed_angle = signed_angle + (2 * math.pi)              
 
         if(signed_angle > roll_reaction_angle):
             roll_right(maxroll_angle)

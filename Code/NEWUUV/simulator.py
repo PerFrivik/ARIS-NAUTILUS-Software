@@ -1,9 +1,14 @@
 import pymavlink
 from pymavlink import mavutil
 import time
+import matplotlib.pyplot as pl
 
 #real value of buoyancymotor in simulator
 realBuoyancy = 50
+
+desiredBuoyancy = 50
+
+BuoyancyStrokeTime = 17
 
 realPitch = 0
 
@@ -12,6 +17,8 @@ realRoll = 0
 realDepth = 0
 
 lasttime = time.time()
+
+missionstarttime = time.time()
 
 def DepthToPressure(depth):
     pressure = depth * 0.0978
@@ -31,8 +38,16 @@ def get_pressure():
     global realDepth
     global realBuoyancy
     global lasttime
+    global desiredBuoyancy
+    global BuoyancyStrokeTime
+    global x
+    global y
     nowtime = time.time()
     realDepth -= (nowtime - lasttime) * (realBuoyancy - 50) * 0.004
+    if(desiredBuoyancy > realBuoyancy):
+        realBuoyancy += (nowtime - lasttime) / BuoyancyStrokeTime * 100
+    else:
+        realBuoyancy -= (nowtime - lasttime) / BuoyancyStrokeTime * 100    
     lasttime = time.time()
     print(realDepth)
     return DepthToPressure(realDepth) 
@@ -54,7 +69,7 @@ def get_pitch():
 def get_yaw():
     return 0
 
-#   get_roll()          returns roll value from PID controller (Rick Roll)
+#   get_roll()          returns roll value from PID controller
 
 def get_roll():
     return 0
@@ -64,11 +79,12 @@ def get_leaksensors():
     return False
 
 def set_buoyancy(x):
-    global realBuoyancy
-    realBuoyancy = x
+    global desiredBuoyancy
+    desiredBuoyancy = x
 
-def set_pitch(x):
-    realPitch = x
+def set_pitch(value):
+    global realPitch
+    realPitch = value
 
 def set_roll(x):
     realRoll = x
