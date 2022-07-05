@@ -1,6 +1,7 @@
 import math
 import time
 from UUV_New_Functions import *
+#from simulator import *
 #expected_functions:
 # SensorDataFunctions: 
 #   get_latitude()      returns latitude from gps sensor in decimal degrees
@@ -58,18 +59,12 @@ class waypoint:
     def __init__(self, latitude, longitude, lower_depth, upper_depth):
         self.latitude = latitude
         self.longitude = longitude
-        if(lower_depth > 0):
-            if(lower_depth > max_depth):
-                self.lower_depth = max_depth
-            else:    
-                self.lower_depth = lower_depth
+        if(lower_depth > 0):  
+            self.lower_depth = lower_depth
         else:
             self.lower_depth = 0
-        if(upper_depth > 0):
-            if(upper_depth > max_depth):
-                upper_depth = max_depth
-            else:            
-                self.upper_depth = upper_depth
+        if(upper_depth > 0):          
+            self.upper_depth = upper_depth
         else:
             self.upper_depth = 0      
 
@@ -79,7 +74,7 @@ class waypoint:
 #Deploys co2 gas cannister and pumps water out of buoyancy module
 #waits until reaching the surface and then ends mission
 def emergency_procedure():
-    emergency_co2()
+    #emergency_co2()
     buoyancy_up()
     while(pressure_to_depth_freshwater(get_pressure()) > 0.1):
         time.sleep(1)    
@@ -105,14 +100,12 @@ def buoyancy_down():
     motor_buoyancy = 0
 
 #function for setting the roll value, such that UUV turns left
-def roll_left():
-    global maxroll_angle
-    set_roll(-maxroll_angle)
+def roll_left(roll_angle):
+    set_roll(-roll_angle)
 
 #function for setting the roll value, such that UUV turns right
-def roll_right():
-    global maxroll_angle
-    set_roll(maxroll_angle) 
+def roll_right(roll_angle):
+    set_roll(roll_angle) 
 
 #Function to check if UUV is in radius of waypoint, returns Boolean value
 #4 Input paramters: waypointradius, waypointcounter, waypoints, est_pos
@@ -120,46 +113,45 @@ def roll_right():
 #waypointcounter denotes the amount of waypoints the UUV has already passed through
 #waypoints denotes a list of GPS_coordinate instances which correspond to the predetermined waypoints
 #est_pos is the estimated position of the UUV
-def check_waypoint(est_pos):
+def check_waypoint(est_pos, waypoint, waypoint_radius, GPSdecimal_to_meters):
     #distance is the distance of the UUV to the current waypoint in decimal GPS_coordinates
-    distance = math.sqrt(((waypoints[waypoint_counter].latitude - est_pos.latitude) ** 2)
-                + ((waypoints[waypoint_counter].longitude - est_pos.longitude) ** 2))            
+    distance = math.sqrt(((waypoint.latitude - est_pos.latitude) ** 2)
+                + ((waypoint.longitude - est_pos.longitude) ** 2))            
     distance_in_meters = distance * GPSdecimal_to_meters            
     if(distance_in_meters < waypoint_radius):
         return True
     else:
         return False
-
-#Constant that denotes the value used to convert decimal GPS represantation to meters
-GPSdecimal_to_meters = 111319.9
-#Time it takes for the buoyancy module to fully pump out all the water in seconds    
-buoyancy_fullstroke_time = 18
-#max depth of the vehicle, if it goes deeper, it cant return (including some margin)
-max_depth = 50
-#optimal pitch when the UUV is descending
-descending_pitch = -72
-#optimal pitch when the UUV is ascending
-ascending_pitch = 72
-#range of value expected for the pitch to take
-pitchrange = ascending_pitch - descending_pitch
-#expected position of buoyancy motor ranging from 0(filled with water) to 100(empty), neutral=50
-motor_buoyancy = 50
-#maximum depth where we still can get GPS signal (needs to be determined by testing) in meters
-maxGPS_aqquisition_depth = 0.1
-#average movementspeed of UUV in meters per second
-average_horizontalspeed = 0.17
-#maximum roll angle the vehicle should reach in degrees
-maxroll_angle = 45
-#radius of the waypoints that the UUV has to pass through in meters
-waypoint_radius = 5
-#counts the number of waypoints vehicle has passed through
-waypoint_counter = 0
-#list of waypointObjects the UUV is supposed to follow
-waypoints = []
-#Declares that the mission is currently running
-mission_running = True
     
 def main():
+    #Constant that denotes the value used to convert decimal GPS represantation to meters
+    GPSdecimal_to_meters = 111319.9
+    #Time it takes for the buoyancy module to fully pump out all the water in seconds    
+    buoyancy_fullstroke_time = 18
+    #max depth of the vehicle, if it goes deeper, it cant return (including some margin)
+    max_depth = 50
+    #optimal pitch when the UUV is descending
+    descending_pitch = -72
+    #optimal pitch when the UUV is ascending
+    ascending_pitch = 72
+    #range of value expected for the pitch to take
+    pitchrange = ascending_pitch - descending_pitch
+    #expected position of buoyancy motor ranging from 0(filled with water) to 100(empty), neutral=50
+    motor_buoyancy = 50
+    #maximum depth where we still can get GPS signal (needs to be determined by testing) in meters
+    maxGPS_aqquisition_depth = 0.1
+    #average movementspeed of UUV in meters per second
+    average_horizontalspeed = 0.17
+    #maximum roll angle the vehicle should reach in degrees
+    maxroll_angle = 45
+    #radius of the waypoints that the UUV has to pass through in meters
+    waypoint_radius = 5
+    #counts the number of waypoints vehicle has passed through
+    waypoint_counter = 0
+    #list of waypointObjects the UUV is supposed to follow
+    waypoints = [waypoint(10, 10, 4, 2)]
+    #Declares that the mission is currently running
+    mission_running = True
     #upper and lower depth at which UUV begins transition from descending/ascending to the other one
     upper_depth = waypoints[waypoint_counter].upper_depth
     lower_depth = waypoints[waypoint_counter].lower_depth
@@ -188,11 +180,14 @@ def main():
     set_pitch(0)
     set_buoyancy(50)
     set_roll(0)
-    time.sleep(10)
+    #time.sleep(10)
     #time value that indicates the start of a transition
     starttime = time.time()
+    #time value that indicates the start of the mission
+    missiontime = time.time()
     #begin descend
     buoyancy_down()
+    trans_up = False
 
     while(mission_running):
         #updating depth and attitude
@@ -213,7 +208,7 @@ def main():
             break
 
         #Check if UUV is currently at waypoint
-        if(check_waypoint(est_pos)):
+        if(check_waypoint(est_pos, waypoints[waypoint_counter], waypoint_radius, GPSdecimal_to_meters)):
             upper_depth = waypoints[waypoint_counter].upper_depth
             lower_depth = waypoints[waypoint_counter].lower_depth 
             waypoint_counter = waypoint_counter + 1           
@@ -318,9 +313,9 @@ def main():
                 signed_angle = signed_angle + ( 2 * math.pi)              
 
         if(signed_angle > roll_reaction_angle):
-            roll_right()
+            roll_right(maxroll_angle)
         elif(signed_angle < roll_reaction_angle):
-            roll_right()
+            roll_right(maxroll_angle)
         else:
             set_roll(0)        
 
