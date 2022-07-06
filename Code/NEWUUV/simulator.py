@@ -18,7 +18,6 @@ realDepth = 0
 
 lasttime = time.time()
 
-missionstarttime = time.time()
 
 def DepthToPressure(depth):
     pressure = depth * 0.0978
@@ -40,17 +39,18 @@ def get_pressure():
     global lasttime
     global desiredBuoyancy
     global BuoyancyStrokeTime
-    global x
-    global y
     nowtime = time.time()
     realDepth -= (nowtime - lasttime) * (realBuoyancy - 50) * 0.004
+    if(realDepth < 0):
+        realDepth = 0
     if(desiredBuoyancy > realBuoyancy):
         realBuoyancy += (nowtime - lasttime) / BuoyancyStrokeTime * 100
     else:
-        realBuoyancy -= (nowtime - lasttime) / BuoyancyStrokeTime * 100    
+        realBuoyancy -= (nowtime - lasttime) / BuoyancyStrokeTime * 100      
     lasttime = time.time()
     print(realDepth)
     return DepthToPressure(realDepth) 
+
     
 
 #   get_heading()       returns angle relative to North from compass in radians
@@ -75,7 +75,7 @@ def get_roll():
     return 0
 
 #   get_leaksensors()   returns false if no leak is detected, true if leaky
-def get_leaksensors():
+def get_leaksensors():   
     return False
 
 def set_buoyancy(x):
