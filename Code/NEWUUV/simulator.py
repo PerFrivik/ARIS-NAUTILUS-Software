@@ -2,6 +2,8 @@ import pymavlink
 from pymavlink import mavutil
 import time
 import matplotlib.pyplot as pl
+import math
+import numpy as np
 
 #real value of buoyancymotor in simulator
 realBuoyancy = 50
@@ -18,6 +20,17 @@ realDepth = 0
 
 lasttime = time.time()
 
+realHeading = math.pi + math.pi / 4
+
+realLatitude = 47.366407
+
+realLongitude = 8.665069
+
+GPSdecimal_to_meters = 111319.9
+
+lat = []
+long = []
+
 
 def DepthToPressure(depth):
     pressure = depth * 0.0978
@@ -25,15 +38,23 @@ def DepthToPressure(depth):
     return pressure
 
 def get_latitude():
-    return 0
+    global realLatitude
+    return realLatitude
 
 #   get_longitude()     returns longitude from gps sensor, negative when west
 
 def get_longitude():
-    return 0
+    global realLongitude
+    return realLongitude
 
 #   get_pressure()      returns pressure from barometer in bar (or pascal?)
 def get_pressure():
+    global lat
+    global long
+    global realLatitude
+    global realLongitude
+    global realRoll
+    global realHeading
     global realDepth
     global realBuoyancy
     global lasttime
@@ -46,9 +67,19 @@ def get_pressure():
     if(desiredBuoyancy > realBuoyancy):
         realBuoyancy += (nowtime - lasttime) / BuoyancyStrokeTime * 100
     else:
-        realBuoyancy -= (nowtime - lasttime) / BuoyancyStrokeTime * 100      
+        realBuoyancy -= (nowtime - lasttime) / BuoyancyStrokeTime * 100
+    if(realRoll < 0):
+        realHeading += np.deg2rad(-realRoll) * (nowtime - lasttime) * 0.1
+    else:
+        realHeading -= np.deg2rad(realRoll) * (nowtime - lasttime) * 0.1
+    component_latitude = math.sin(realHeading)
+    component_longitude = math.cos(realHeading)
+    realLatitude += (component_latitude * 0.2 / GPSdecimal_to_meters) * (nowtime - lasttime)
+    realLongitude += (component_longitude * 0.2 / GPSdecimal_to_meters) * (nowtime - lasttime)
+    lat.append(realLatitude)
+    long.append(realLongitude)
     lasttime = time.time()
-    print(realDepth)
+    #print(realHeading)
     return DepthToPressure(realDepth) 
 
     
@@ -56,7 +87,8 @@ def get_pressure():
 #   get_heading()       returns angle relative to North from compass in radians
 
 def get_heading():
-    return 0
+    global realHeading
+    return realHeading
 
 #   get_pitch()         returns pitch value from PID controller
 
@@ -78,17 +110,23 @@ def get_roll():
 def get_leaksensors():   
     return False
 
-def set_buoyancy(x):
+def set_buoyancy(value):
     global desiredBuoyancy
-    desiredBuoyancy = x
+    desiredBuoyancy = value
 
 def set_pitch(value):
     global realPitch
     realPitch = value
 
-def set_roll(x):
-    realRoll = x
+def set_roll(value):
+    global realRoll
+    realRoll = value
 
+def makeplots():
+    global lat
+    global long
+    pl.plot(lat, long)
+    pl.show()
 
 
 # MISSINGGGG

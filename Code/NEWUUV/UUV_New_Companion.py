@@ -145,11 +145,11 @@ def main():
     #maximum roll angle the vehicle should reach in degrees
     maxroll_angle = 45
     #radius of the waypoints that the UUV has to pass through in meters
-    waypoint_radius = 5
+    waypoint_radius = 1
     #counts the number of waypoints vehicle has passed through
     waypoint_counter = 0
     #list of waypointObjects the UUV is supposed to follow
-    waypoints = [waypoint(10, 10, 4, 2)]
+    waypoints = [waypoint(47.366171, 8.665093, 15, 2), waypoint(47.366407, 8.665069, 10, 3)]
     #Declares that the mission is currently running
     mission_running = True
     #upper and lower depth at which UUV begins transition from descending/ascending to the other one
@@ -209,16 +209,19 @@ def main():
 
         #Check if UUV is currently at waypoint
         if(check_waypoint(est_pos, waypoints[waypoint_counter], waypoint_radius, GPSdecimal_to_meters)):
-            upper_depth = waypoints[waypoint_counter].upper_depth
-            lower_depth = waypoints[waypoint_counter].lower_depth 
             waypoint_counter = waypoint_counter + 1           
             #if waypoint was the last one, return to surface
             if(waypoint_counter >= len(waypoints)):
                 buoyancy_up()
                 while(pressure_to_depth_freshwater(get_pressure()) > 0.1):
                     time.sleep(1)
+                    buoyancy_up()
+                #use the next line only when using emulator    
+                #makeplots()    
                 mission_running = False    
                 break
+            upper_depth = waypoints[waypoint_counter].upper_depth
+            lower_depth = waypoints[waypoint_counter].lower_depth 
         
         if(not startphase):
              #Check if vehicle should start switch between ascend/descend
@@ -304,18 +307,17 @@ def main():
         comp_longitude = math.cos(attitude.heading)
         vw = (waypoints[waypoint_counter].latitude - est_pos.latitude, waypoints[waypoint_counter].longitude - est_pos.longitude)
         vh =  (comp_latitude, comp_longitude)
-
+        #signed_angle is supposed to give the angle between the 2 vectors but is not yet working
         signed_angle = math.atan2(vw[1],vw[0]) - math.atan2(vh[1],vh[0])
         if(abs(signed_angle) > math.pi):
             if(signed_angle > 0):
                 signed_angle = signed_angle - (2 * math.pi)
             else:
-                signed_angle = signed_angle + (2 * math.pi)              
-
+                signed_angle = signed_angle + (2 * math.pi)                     
         if(signed_angle > roll_reaction_angle):
             roll_right(maxroll_angle)
-        elif(signed_angle < roll_reaction_angle):
-            roll_right(maxroll_angle)
+        elif(signed_angle < -roll_reaction_angle):
+            roll_left(maxroll_angle)
         else:
             set_roll(0)        
 
