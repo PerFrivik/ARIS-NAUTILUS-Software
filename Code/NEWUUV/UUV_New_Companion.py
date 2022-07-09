@@ -149,7 +149,7 @@ def main():
     #counts the number of waypoints vehicle has passed through
     waypoint_counter = 0
     #list of waypointObjects the UUV is supposed to follow
-    waypoints = [waypoint(47.366171, 8.665093, 15, 2), waypoint(47.366407, 8.665069, 10, 3)]
+    waypoints = [waypoint(47.366178, 8.664767, 15, 2), waypoint(47.366407, 8.665069, 10, 3)]
     #Declares that the mission is currently running
     mission_running = True
     #upper and lower depth at which UUV begins transition from descending/ascending to the other one
@@ -176,6 +176,8 @@ def main():
     #value that indicates how many percents of a transition have been completed
     percent_completed = 0.5
 
+    previousLoopTime = time.time()
+
     #initializin buoyancy and pitch
     set_pitch(0)
     set_buoyancy(50)
@@ -199,9 +201,9 @@ def main():
         else:
             component_latitude = math.sin(attitude.heading)
             component_longitude = math.cos(attitude.heading)
-            est_pos.update_position(est_pos.latitude + (component_latitude * average_horizontalspeed / GPSdecimal_to_meters),
-                                     est_pos.longitude + (component_longitude * average_horizontalspeed / GPSdecimal_to_meters))
-
+            est_pos.update_position(est_pos.latitude + (component_latitude * average_horizontalspeed * (time.time() - previousLoopTime)/ GPSdecimal_to_meters),
+                                     est_pos.longitude + (component_longitude * average_horizontalspeed * (time.time() - previousLoopTime)/ GPSdecimal_to_meters))
+            previousLoopTime = time.time()
         #test for leaks in vehicle    
         if(get_leaksensors()):
             emergency_procedure()
@@ -216,6 +218,7 @@ def main():
                 while(pressure_to_depth_freshwater(get_pressure()) > 0.1):
                     time.sleep(1)
                     buoyancy_up()
+                    set_roll(0)
                 #use the next line only when using emulator    
                 #makeplots()    
                 mission_running = False    
@@ -307,13 +310,12 @@ def main():
         comp_longitude = math.cos(attitude.heading)
         vw = (waypoints[waypoint_counter].latitude - est_pos.latitude, waypoints[waypoint_counter].longitude - est_pos.longitude)
         vh =  (comp_latitude, comp_longitude)
-        #signed_angle is supposed to give the angle between the 2 vectors but is not yet working
+        #signed_angle is the angle between the 2 vectors vh (heading vector) and vw (waypointvector)
         signed_angle = math.atan2(vw[1],vw[0]) - math.atan2(vh[1],vh[0])
-        if(abs(signed_angle) > math.pi):
-            if(signed_angle > 0):
-                signed_angle = signed_angle - (2 * math.pi)
-            else:
-                signed_angle = signed_angle + (2 * math.pi)                     
+        if(signed_angle > math.pi):
+            signed_angle -= 2 * math.pi
+        elif(signed_angle < -math.pi):
+            signed_angle += 2 * math.pi                              
         if(signed_angle > roll_reaction_angle):
             roll_right(maxroll_angle)
         elif(signed_angle < -roll_reaction_angle):

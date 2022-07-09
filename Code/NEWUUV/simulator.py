@@ -1,3 +1,4 @@
+from turtle import color
 import pymavlink
 from pymavlink import mavutil
 import time
@@ -18,7 +19,10 @@ realRoll = 0
 
 realDepth = 0
 
-lasttime = time.time()
+lasttimeD = time.time()
+lasttimeB = time.time()
+lasttimeG = time.time()
+lasttimeH = time.time()
 
 realHeading = math.pi + math.pi / 4
 
@@ -28,8 +32,6 @@ realLongitude = 8.665069
 
 GPSdecimal_to_meters = 111319.9
 
-lat = []
-long = []
 
 
 def DepthToPressure(depth):
@@ -49,37 +51,37 @@ def get_longitude():
 
 #   get_pressure()      returns pressure from barometer in bar (or pascal?)
 def get_pressure():
-    global lat
-    global long
     global realLatitude
     global realLongitude
     global realRoll
     global realHeading
     global realDepth
     global realBuoyancy
-    global lasttime
+    global lasttimeD
+    global lasttimeB
+    global lasttimeG
+    global lasttimeH
     global desiredBuoyancy
     global BuoyancyStrokeTime
-    nowtime = time.time()
-    realDepth -= (nowtime - lasttime) * (realBuoyancy - 50) * 0.004
+    realDepth -= (time.time() - lasttimeD) * (realBuoyancy - 50) * 0.004
+    lasttimeD = time.time()
     if(realDepth < 0):
         realDepth = 0
     if(desiredBuoyancy > realBuoyancy):
-        realBuoyancy += (nowtime - lasttime) / BuoyancyStrokeTime * 100
+        realBuoyancy += (time.time() - lasttimeB) / BuoyancyStrokeTime * 100
     else:
-        realBuoyancy -= (nowtime - lasttime) / BuoyancyStrokeTime * 100
+        realBuoyancy -= (time.time() - lasttimeB) / BuoyancyStrokeTime * 100
+    lasttimeB = time.time()    
     if(realRoll < 0):
-        realHeading += np.deg2rad(-realRoll) * (nowtime - lasttime) * 0.1
+        realHeading += np.deg2rad(-realRoll) * (time.time() - lasttimeH) * 0.1
     else:
-        realHeading -= np.deg2rad(realRoll) * (nowtime - lasttime) * 0.1
+        realHeading -= np.deg2rad(realRoll) * (time.time() - lasttimeH) * 0.1
+    lasttimeH = time.time()    
     component_latitude = math.sin(realHeading)
     component_longitude = math.cos(realHeading)
-    realLatitude += (component_latitude * 0.2 / GPSdecimal_to_meters) * (nowtime - lasttime)
-    realLongitude += (component_longitude * 0.2 / GPSdecimal_to_meters) * (nowtime - lasttime)
-    lat.append(realLatitude)
-    long.append(realLongitude)
-    lasttime = time.time()
-    #print(realHeading)
+    realLatitude += (component_latitude * 0.17 / GPSdecimal_to_meters) * (time.time() - lasttimeG)
+    realLongitude += (component_longitude * 0.17 / GPSdecimal_to_meters) * (time.time() - lasttimeG)
+    lasttimeG = time.time()
     return DepthToPressure(realDepth) 
 
     
@@ -123,9 +125,9 @@ def set_roll(value):
     realRoll = value
 
 def makeplots():
-    global lat
-    global long
-    pl.plot(lat, long)
+    global head
+    global tim
+    pl.plot(tim, head)
     pl.show()
 
 
