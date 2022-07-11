@@ -1,5 +1,6 @@
 import math
 import time
+from turtle import right
 from UUV_New_Functions import *
 #from simulator import *
 #expected_functions:
@@ -149,7 +150,7 @@ def main():
     #counts the number of waypoints vehicle has passed through
     waypoint_counter = 0
     #list of waypointObjects the UUV is supposed to follow
-    waypoints = [waypoint(47.366178, 8.664767, 15, 2), waypoint(47.366407, 8.665069, 10, 3)]
+    waypoints = [waypoint(47.366250, 8.665084, 15, 2), waypoint(47.366407, 8.665069, 10, 3)]
     #Declares that the mission is currently running
     mission_running = True
     #upper and lower depth at which UUV begins transition from descending/ascending to the other one
@@ -192,6 +193,7 @@ def main():
     trans_up = False
 
     while(mission_running):
+        time.sleep(0.001)
         #updating depth and attitude
         depth = pressure_to_depth_freshwater(get_pressure())
         attitude.update_attitude(get_heading(), get_pitch(), get_yaw(), get_roll())
@@ -203,7 +205,7 @@ def main():
             component_longitude = math.cos(attitude.heading)
             est_pos.update_position(est_pos.latitude + (component_latitude * average_horizontalspeed * (time.time() - previousLoopTime)/ GPSdecimal_to_meters),
                                      est_pos.longitude + (component_longitude * average_horizontalspeed * (time.time() - previousLoopTime)/ GPSdecimal_to_meters))
-            previousLoopTime = time.time()
+            previousLoopTime = time.time()  
         #test for leaks in vehicle    
         if(get_leaksensors()):
             emergency_procedure()
@@ -215,12 +217,13 @@ def main():
             #if waypoint was the last one, return to surface
             if(waypoint_counter >= len(waypoints)):
                 buoyancy_up()
+                set_roll(0)
                 while(pressure_to_depth_freshwater(get_pressure()) > 0.1):
                     time.sleep(1)
                     buoyancy_up()
                     set_roll(0)
                 #use the next line only when using emulator    
-                #makeplots()    
+                #makeplots()
                 mission_running = False    
                 break
             upper_depth = waypoints[waypoint_counter].upper_depth
@@ -321,7 +324,7 @@ def main():
         elif(signed_angle < -roll_reaction_angle):
             roll_left(maxroll_angle)
         else:
-            set_roll(0)        
+            set_roll(0)       
 
 
 

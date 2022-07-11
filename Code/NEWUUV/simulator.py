@@ -32,6 +32,10 @@ realLongitude = 8.665069
 
 GPSdecimal_to_meters = 111319.9
 
+depth = []
+tim = []
+missionstarttime = time.time()
+
 
 
 def DepthToPressure(depth):
@@ -63,6 +67,7 @@ def get_pressure():
     global lasttimeH
     global desiredBuoyancy
     global BuoyancyStrokeTime
+    global depth
     realDepth -= (time.time() - lasttimeD) * (realBuoyancy - 50) * 0.004
     lasttimeD = time.time()
     if(realDepth < 0):
@@ -82,6 +87,8 @@ def get_pressure():
     realLatitude += (component_latitude * 0.17 / GPSdecimal_to_meters) * (time.time() - lasttimeG)
     realLongitude += (component_longitude * 0.17 / GPSdecimal_to_meters) * (time.time() - lasttimeG)
     lasttimeG = time.time()
+    depth.append(realDepth)
+    tim.append(time.time() - missionstarttime)
     return DepthToPressure(realDepth) 
 
     
@@ -125,9 +132,10 @@ def set_roll(value):
     realRoll = value
 
 def makeplots():
-    global head
     global tim
-    pl.plot(tim, head)
+    global depth
+    #pl.gca().set_aspect('equal')
+    pl.plot(tim, depth)
     pl.show()
 
 
