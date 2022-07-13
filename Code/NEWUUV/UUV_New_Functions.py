@@ -4,7 +4,8 @@ from pymavlink import mavutil
 #  get_master()         returns the master connection     
 
 def get_master():
-     master = mavutil.mavlink_connection("/dev/cu.usbmodem11101", baud=115200)
+     master = mavutil.mavlink_connection("/dev/cu.usbmodem21101", baud=115200)
+#   "/dev/cu.submodemXXXXX" Run UUV_Port_Finder.py to find the correct values for XXXXX, Pixhawk needs to be plugged in.
      return master
 
 #  get_heartbeat()      returns the heartbeat that confirms the connection
@@ -31,8 +32,9 @@ def get_message_interval(message_id: int, frequency_hz: float):
 
 def get_latitude():
     master = get_master()
-    # Configure ATTITUDE message to be sent at 2Hz
+    # Configure ATTITUDE message to be sent at 1hz 
     get_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_AHRS2, 1)
+    # The 
 
     AHRS2 = master.recv_match(type = 'AHRS2', blocking=True).to_dict()
 
@@ -60,6 +62,21 @@ def get_longitude():
     return longitude 
 
 #   get_pressure()      returns pressure from barometer in bar (or pascal?)
+
+def get_pressure():
+    master = get_master()
+    get_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_SCALED_PRESSURE, 2)
+
+    SCALED_PRESSURE = master.recv_match(type = "SCALED_PRESSURE", blocking=True).to_dict()
+
+    press_abs = SCALED_PRESSURE.get("press_abs")
+
+
+    print("this should be the press_abs: {}".format(press_abs))
+    print(press_abs)
+
+    return press_abs
+
 
 # STILL MISSING NEED TO TALK WITH ELECTRONICS 
 
@@ -129,5 +146,16 @@ def get_roll():
 
 
 # MISSINGGGG
+
+def get_distance():
+    master = get_master()
+    get_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_DISTANCE_SENSOR, 2)
+
+    distance = master.recv_match(type = "DISTANCE_SENSOR", blocking=True).to_dict()
+
+    print("this should be the press_abs: {}".format(distance))
+    print(distance)
+
+    return distance
 
 #   get_sonardata()

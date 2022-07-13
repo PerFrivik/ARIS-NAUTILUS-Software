@@ -4,7 +4,7 @@ from pymavlink import mavutil
 #  get_master()         returns the master connection     
 
 def get_master():
-     master = mavutil.mavlink_connection("/dev/cu.usbmodem11101", baud=115200)
+     master = mavutil.mavlink_connection("/dev/cu.usbmodem1201", baud=115200)
      return master
 
 #  get_heartbeat()      returns the heartbeat that confirms the connection
@@ -34,12 +34,9 @@ def get_latitude():
     # Configure ATTITUDE message to be sent at 2Hz
     get_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_AHRS2, 1)
 
-    AHRS2 = master.recv_match(type = 'AHRS2', blocking=True).to_dict()
+    AHRS2 = master.recv_match(type = 'AHRS2', blocking=True)
 
     latitude = AHRS2.get("lat")
-
-    print("this should be the latitude: {}".format(latitude))
-    print(latitude)
     
     return latitude
 
@@ -50,35 +47,27 @@ def get_longitude():
     # Configure ATTITUDE message to be sent at 2Hz
     get_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_AHRS2, 1)
 
-    AHRS2 = master.recv_match(type = 'AHRS2', blocking=True).to_dict()
+    AHRS2 = master.recv_match(type = 'AHRS2', blocking=True)
 
     longitude = AHRS2.get("lng")
-
-    print("this should be the longitude: {}".format(longitude))
-    print(longitude)
-
+    
     return longitude 
 
 #   get_pressure()      returns pressure from barometer in bar (or pascal?)
-
-# STILL MISSING NEED TO TALK WITH ELECTRONICS 
 
 #   get_heading()       returns angle relative to North from compass in radians
 
 def get_heading():
     master = get_master()
     # Configure ATTITUDE message to be sent at 2Hz
-    get_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_VFR_HUD, 1)   
-    VFR_HUD = master.recv_match(type = 'VFR_HUD', blocking=True).to_dict()
+    get_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_COMPASSMOT_STATUS, 1)   
+    COMPASSMOT_STATUS = master.recv_match(type = 'COMPASSMOT_STATUS', blocking=True)
 
-    heading = VFR_HUD.get("heading")
-
-    print("this should be the heading: {}".format(heading))
-    print(heading)
+    heading = COMPASSMOT_STATUS.get("pitch")
     
     return heading
 
-    #CHANGE THIS USE #74 VFR_HUD!!!!!!! DONEEE BUT I DONT KNOW IF HE WANTS DEGREES OR WHAT HE WANTS FOR UNITS
+    #CHANGE THIS USE #74 VFR_HUD!!!!!!! 
 
 #   get_pitch()         returns pitch value from PID controller
 
@@ -86,12 +75,9 @@ def get_pitch():
     master = get_master()
     # Configure ATTITUDE message to be sent at 2Hz
     get_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_AHRS2, 1)   
-    AHRS2 = master.recv_match(type = 'AHRS2', blocking=True).to_dict()
+    AHRS2 = master.recv_match(type = 'AHRS2', blocking=True)
 
     pitch = AHRS2.get("pitch")
-
-    print("this should be the pitch: {}".format(pitch))
-    print(pitch)
     
     return pitch
 
@@ -101,12 +87,9 @@ def get_yaw():
     master = get_master()
     # Configure ATTITUDE message to be sent at 2Hz
     get_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_AHRS2, 1)
-    AHRS2 = master.recv_match(type = 'AHRS2', blocking=True).to_dict()
+    AHRS2 = master.recv_match(type = 'AHRS2', blocking=True)
 
     yaw = AHRS2.get("yaw")
-
-    print("this should be the yaw: {}".format(yaw))
-    print(yaw)
     
     return yaw
 
@@ -116,16 +99,10 @@ def get_roll():
     master = get_master()
     # Configure ATTITUDE message to be sent at 2Hz
     get_message_interval(mavutil.mavlink.MAVLINK_MSG_ID_AHRS2, 1)
-    AHRS2 = master.recv_match(type = 'AHRS2', blocking=True).to_dict()
+    AHRS2 = master.recv_match(type = 'AHRS2', blocking=True)
 
     roll = AHRS2.get("roll")
-
-    print("this should be the roll: {}".format(roll))
-    print(roll)
     
     return roll
 
 #   get_leaksensors()   returns false if no leak is detected, true if leaky
-
-
-# MISSINGGGG

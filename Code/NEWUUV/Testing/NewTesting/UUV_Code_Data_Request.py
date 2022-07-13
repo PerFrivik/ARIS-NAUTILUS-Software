@@ -10,7 +10,7 @@ import time
 from pymavlink import mavutil
 
 # Create the connection
-master = mavutil.mavlink_connection("/dev/cu.usbmodem11101", baud=115200)
+master = mavutil.mavlink_connection("/dev/cu.usbmodem21103", baud=115200)
 # Wait a heartbeat before sending commands
 master.wait_heartbeat()
 

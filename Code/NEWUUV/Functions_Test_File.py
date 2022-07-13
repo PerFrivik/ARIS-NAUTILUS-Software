@@ -19,6 +19,10 @@ while True:
     get_yaw()
 
     get_roll() 
+
+    get_pressure()
+
+    get_distance()
     
     time.sleep(0.1)
 
