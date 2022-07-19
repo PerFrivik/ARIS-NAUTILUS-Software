@@ -15,6 +15,8 @@ from UUV_New_Functions import *
 #   get_leaksensors()   returns false if no leak is detected, true if leaky
 #
 #MotorControlFunctions:
+#   setRightSoftwing(value) Sends value to Pico motor control board (value ranging from -100 to 100) -100 meaning wing down, and 100 wing up
+#   setLeftSoftwing(value)  Sends value to Pic motor control board
 #   set_buoyancy(value) Sends value to Pico motor control board
 #   set_pitch(value)    Sends value to Jorit, possibly include encoding for pitch
 #   set_roll(value)     Sends value to Jorit, possibly include encoding for roll
@@ -78,7 +80,8 @@ def emergency_procedure():
     #emergency_co2()
     buoyancy_up()
     while(pressure_to_depth_freshwater(get_pressure()) > 0.1):
-        time.sleep(1)    
+        time.sleep(1)
+        buoyancy_up()    
 
 #function that converts barometer data to depth in meters
 #takes pressure in bars as input and outputs depth in meters
@@ -100,12 +103,16 @@ def buoyancy_down():
     global motor_buoyancy
     motor_buoyancy = 0
 
-#function for setting the roll value, such that UUV turns left
-def roll_left(roll_angle):
+#function for setting values, such that UUV turns left
+def turn_left(roll_angle):
+    setLeftSoftwing(100)
+    setRightSoftwing(-100)
     set_roll(-roll_angle)
 
-#function for setting the roll value, such that UUV turns right
-def roll_right(roll_angle):
+#function for setting values, such that UUV turns right
+def turn_right(roll_angle):
+    setLeftSoftwing(-100)
+    setRightSoftwing(100)
     set_roll(roll_angle) 
 
 #Function to check if UUV is in radius of waypoint, returns Boolean value
@@ -166,6 +173,9 @@ def main():
     expected_roll = 0
     #if the angle between heading vector and waypoint vector is >= roll_reaction_angle UUV should roll [RADIANS]
     roll_reaction_angle = 0.0872665
+    #Softwing optimum ascent and descent value between -100 and 100
+    softwing_descent = -100
+    softwing_ascent = 100
     #expected position of pitch of the UUV the motor is trying to achieve ranging from -90(bottom) to 90(top), neutral = 0
     expected_pitch = 0
     #boolean value that indicates if vehicle is descending or ascending
@@ -320,11 +330,17 @@ def main():
         elif(signed_angle < -math.pi):
             signed_angle += 2 * math.pi                              
         if(signed_angle > roll_reaction_angle):
-            roll_right(maxroll_angle)
+            turn_right(maxroll_angle)
         elif(signed_angle < -roll_reaction_angle):
-            roll_left(maxroll_angle)
+            turn_left(maxroll_angle)
         else:
-            set_roll(0)       
+            set_roll(0)
+            if(descending):
+                setLeftSoftwing(softwing_descent)
+                setRightSoftwing(softwing_descent)
+            else:
+                setLeftSoftwing(softwing_ascent)
+                setRightSoftwing(softwing_ascent)           
 
 
 

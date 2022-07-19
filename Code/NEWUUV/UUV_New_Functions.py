@@ -143,7 +143,8 @@ def get_roll():
     return roll
 
 #   get_leaksensors()   returns false if no leak is detected, true if leaky
-
+def get_leaksensors():
+    return False
 
 # MISSINGGGG
 
@@ -159,3 +160,18 @@ def get_distance():
     return distance
 
 #   get_sonardata()
+
+def set_buoyancy(value):
+    return 0
+
+def set_pitch(value):
+    return 0
+
+def set_roll(value):
+    return 0     
+
+def setLeftSoftwing(value):
+    return 0
+
+def setRightSoftwing(value):
+    return 0           
