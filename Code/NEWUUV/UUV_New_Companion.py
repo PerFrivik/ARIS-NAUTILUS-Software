@@ -1,8 +1,7 @@
 import math
 import time
-from turtle import right
-#from UUV_New_Functions import *
-from simulator import *
+from UUV_New_Functions import *
+#from simulator import *
 #expected_functions:
 # SensorDataFunctions: 
 #   get_latitude()      returns latitude from gps sensor in decimal degrees
@@ -173,9 +172,13 @@ def main():
     expected_roll = 0
     #if the angle between heading vector and waypoint vector is >= roll_reaction_angle UUV should roll [RADIANS]
     roll_reaction_angle = 0.0872665
+    #bool to indicate if vehicle is currently turning
+    turning = False
     #Softwing optimum ascent and descent value between -100 and 100
     softwing_descent = -100
     softwing_ascent = 100
+    #range of values expected for softwingmotors to take
+    softwing_range = softwing_ascent - softwing_descent
     #expected position of pitch of the UUV the motor is trying to achieve ranging from -90(bottom) to 90(top), neutral = 0
     expected_pitch = 0
     #boolean value that indicates if vehicle is descending or ascending
@@ -189,22 +192,23 @@ def main():
     #indicates if during the transition the direction of the transition has changed
     trans_changed = False
 
-    previousLoopTime = time.time()
-
     #initializin buoyancy and pitch
     set_pitch(0)
     set_buoyancy(50)
     set_roll(0)
+    setLeftSoftwing(0)
+    setRightSoftwing(0)
     #time.sleep(10)
     #time value that indicates the start of a transition
-    transitionStarttime = time.time()
+    transitionStarttime = time.time() - (buoyancy_fullstroke_time / 2)
+    #time value indicating the last time the program passed through the while loop
+    previousLoopTime = time.time()
     #time value that indicates the start of the mission
     missiontime = time.time()
     #begin descend
     buoyancy_down()
 
     while(mission_running):
-        print(depth)
         time.sleep(0.001)
         #updating depth and attitude
         depth = pressure_to_depth_freshwater(get_pressure())
@@ -235,7 +239,7 @@ def main():
                     buoyancy_up()
                     set_roll(0)
                 #use the next line only when using emulator    
-                makeplots()
+                #makeplots()
                 mission_running = False    
                 break
             upper_depth = waypoints[waypoint_counter].upper_depth
@@ -283,8 +287,15 @@ def main():
                 percent_completed = dif / buoyancy_fullstroke_time
                 if(trans_up):
                     set_pitch(descending_pitch + pitchrange * percent_completed)
+                    if(not turning):
+                        setLeftSoftwing(softwing_descent + softwing_range * percent_completed)
+                        setRightSoftwing(softwing_descent + softwing_range * percent_completed)
                 else:
                     set_pitch(ascending_pitch - pitchrange * percent_completed)
+                    if(not turning):
+                        setLeftSoftwing(softwing_ascent - softwing_range * percent_completed)
+                        setRightSoftwing(softwing_ascent - softwing_range * percent_completed)
+
                 #if transition phase completed, switch to ascend/descend phase    
                 if(percent_completed >= 1):
                     transitioning = False
@@ -312,9 +323,12 @@ def main():
             signed_angle += 2 * math.pi                              
         if(signed_angle > roll_reaction_angle):
             turn_right(maxroll_angle)
+            turning = True
         elif(signed_angle < -roll_reaction_angle):
             turn_left(maxroll_angle)
+            turning = True
         else:
+            turning = False
             set_roll(0)
             if(descending):
                 setLeftSoftwing(softwing_descent)
