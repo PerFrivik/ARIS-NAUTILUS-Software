@@ -1,8 +1,8 @@
 import math
 import time
 from turtle import right
-from UUV_New_Functions import *
-#from simulator import *
+#from UUV_New_Functions import *
+from simulator import *
 #expected_functions:
 # SensorDataFunctions: 
 #   get_latitude()      returns latitude from gps sensor in decimal degrees
@@ -181,11 +181,13 @@ def main():
     #boolean value that indicates if vehicle is descending or ascending
     descending = True
     #boolean value that indicates if vehicle is currently changing from ascending to descending or vice versa
-    transitioning = False
-    #boolean value that indicates if Vehicle is in the first "active sinking" phase of the mission
-    startphase = True
+    transitioning = True
     #value that indicates how many percents of a transition have been completed
     percent_completed = 0.5
+    #if vehicle is currently transitioning this value indicates if transition is upwards or downwards
+    trans_up = False
+    #indicates if during the transition the direction of the transition has changed
+    trans_changed = False
 
     previousLoopTime = time.time()
 
@@ -195,14 +197,14 @@ def main():
     set_roll(0)
     #time.sleep(10)
     #time value that indicates the start of a transition
-    starttime = time.time()
+    transitionStarttime = time.time()
     #time value that indicates the start of the mission
     missiontime = time.time()
     #begin descend
     buoyancy_down()
-    trans_up = False
 
     while(mission_running):
+        print(depth)
         time.sleep(0.001)
         #updating depth and attitude
         depth = pressure_to_depth_freshwater(get_pressure())
@@ -233,90 +235,69 @@ def main():
                     buoyancy_up()
                     set_roll(0)
                 #use the next line only when using emulator    
-                #makeplots()
+                makeplots()
                 mission_running = False    
                 break
             upper_depth = waypoints[waypoint_counter].upper_depth
             lower_depth = waypoints[waypoint_counter].lower_depth 
         
-        if(not startphase):
+        #setting the values for normal descending/ascending phase        
+        if(not transitioning):             
+            #send commands to motors   
+            if(descending and expected_pitch != descending_pitch):
+                set_pitch(descending_pitch)
+                expected_pitch = descending_pitch
+            if(not descending and expected_pitch != ascending_pitch):
+                set_pitch(ascending_pitch)
+                expected_pitch = ascending_pitch
+            if(descending and motor_buoyancy != 0):
+                buoyancy_down()           
+            if(not descending and motor_buoyancy != 100):
+                buoyancy_up()
              #Check if vehicle should start switch between ascend/descend
             if((descending and depth >= lower_depth) or (not descending and depth <= upper_depth)):
-                if(not transitioning):
-                    transitioning = True
-                    changed = False
-                    if(descending):
-                        buoyancy_up()
-                    else:
-                        buoyancy_down()
-                    starttime = time.time()
-                    #set trans_up to describe if vehicle is turning up or down
-                    if(descending and depth >= lower_depth):
-                        trans_up = True
-                    else:
-                        trans_up = False    
+                transitioning = True
+                if(descending):
+                    buoyancy_up()
+                    trans_up = True
+                else:
+                    buoyancy_down()
+                    trans_up = False
+                transitionStarttime = time.time()  
+        else:    
             #check if during transition phase vehicle needs to transition again in other direction
-            if(trans_up and depth <= upper_depth and transitioning):
+            if(trans_up and depth <= upper_depth):
                 buoyancy_down()
                 trans_up = False
-                changed = True
-            elif(not trans_up and depth >= lower_depth and transitioning):
+                trans_changed = True
+            elif(not trans_up and depth >= lower_depth):
                 buoyancy_up()          
                 trans_up = True
-                changed = True  
+                trans_changed = True  
 
-            #setting the values for normal descending/ascending phase        
-            if(not transitioning):             
-                #send commands to motors   
-                if(descending and expected_pitch != descending_pitch):
-                    set_pitch(descending_pitch)
-                    expected_pitch = descending_pitch
-                if(not descending and expected_pitch != ascending_pitch):
-                    set_pitch(ascending_pitch)
-                    expected_pitch = ascending_pitch
-                if(descending and motor_buoyancy != 0):
-                    buoyancy_down()           
-                if(not descending and motor_buoyancy != 100):
-                    buoyancy_up()
             #keep pitch of UUV right when switching
             #means linearly on pitchrange relative to the position of buoyancy motor
-            else:
-                nowtime = time.time()
-                if(not changed):
-                    dif = nowtime - starttime
-                    percent_completed = dif / buoyancy_fullstroke_time
-                    if(trans_up):
-                        set_pitch(descending_pitch + pitchrange * percent_completed)
-                    else:
-                        set_pitch(ascending_pitch - pitchrange * percent_completed)
-                    #if transition phase completed, switch to ascend/descend phase    
-                    if(percent_completed >= 1):
-                        transitioning = False
-                        if(trans_up):
-                            descending = False
-                        else:
-                            descending = True  
-                #if during transition, vehicle needs to transition into other direction, change percent_completed              
-                else:
-                    changed = False
-                    percent_completed = 1 - percent_completed
-                    starttime = nowtime - percent_completed * buoyancy_fullstroke_time
-        #startphase is handled like transition, except that percent_completed starts at 0.5                
-        else:
             nowtime = time.time()
-            dif = nowtime - starttime
-            percent_completed = (dif + (buoyancy_fullstroke_time / 2)) / buoyancy_fullstroke_time
-            set_pitch(ascending_pitch - pitchrange * percent_completed)
-            #if percent_completed is greater 1, switch to descend phase
-            if(percent_completed >= 1):
-                startphase = False
-            #if during startphase vehicle needs to turn up, switch to transitioning phase and change percent completed value    
-            elif(depth >= lower_depth):
-                startphase = False    
-                trans_up = True
-                transitioning = True
+            if(not trans_changed):
+                dif = nowtime - transitionStarttime
+                percent_completed = dif / buoyancy_fullstroke_time
+                if(trans_up):
+                    set_pitch(descending_pitch + pitchrange * percent_completed)
+                else:
+                    set_pitch(ascending_pitch - pitchrange * percent_completed)
+                #if transition phase completed, switch to ascend/descend phase    
+                if(percent_completed >= 1):
+                    transitioning = False
+                    if(trans_up):
+                        descending = False
+                    else:
+                        descending = True  
+            #if during transition, vehicle needs to transition into other direction, change percent_completed              
+            else:
+                trans_changed = False
                 percent_completed = 1 - percent_completed
-                starttime = nowtime - percent_completed * buoyancy_fullstroke_time
+                transitionStarttime = nowtime - percent_completed * buoyancy_fullstroke_time
+
        
         #roll logic
         comp_latitude = math.sin(attitude.heading)

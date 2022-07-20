@@ -138,13 +138,21 @@ def set_roll(value):
     realRoll = value
 
 def makeplots():
+    global depth
+    global tim
     global lat
     global long
+    pl.plot(tim, depth)
+    pl.show()
     pl.gca().set_aspect('equal')
     pl.plot(long, lat)
     pl.show()
 
+def setLeftSoftwing(value):
+    return 0
 
+def setRightSoftwing(value):
+    return 0    
 # MISSINGGGG
 
 #   get_sonardata()
